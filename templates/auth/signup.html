@@ -1,0 +1,71 @@
+{% extends "auth/base.html" %}
+{% block title %}Create Account{% endblock %}
+{% block content %}
+<div class="auth-card">
+  <a href="/" class="brand">
+    <div class="brand-icon">⬡</div>
+    <span class="brand-name">{% if SITE_NAME %}{{ SITE_NAME }}{% else %}MyApp{% endif %}</span>
+  </a>
+
+  <h1 class="card-title">Create your account</h1>
+  <p class="card-subtitle">Start in seconds — no credit card required.</p>
+
+  {% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+    <li class="message {{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+      <div class="field">
+        <label for="{{ form.first_name.id_for_label }}">First name</label>
+        {{ form.first_name }}
+        {% if form.first_name.errors %}
+        <div class="field-errors">{% for e in form.first_name.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+        {% endif %}
+      </div>
+      <div class="field">
+        <label for="{{ form.last_name.id_for_label }}">Last name</label>
+        {{ form.last_name }}
+        {% if form.last_name.errors %}
+        <div class="field-errors">{% for e in form.last_name.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="{{ form.email.id_for_label }}">Email address</label>
+      {{ form.email }}
+      {% if form.email.errors %}
+      <div class="field-errors">{% for e in form.email.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <label for="{{ form.password1.id_for_label }}">Password</label>
+      {{ form.password1 }}
+      {% if form.password1.errors %}
+      <div class="field-errors">{% for e in form.password1.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+      {% endif %}
+      <p class="help-text">Min 8 characters — mix letters, numbers &amp; symbols.</p>
+    </div>
+
+    <div class="field">
+      <label for="{{ form.password2.id_for_label }}">Confirm password</label>
+      {{ form.password2 }}
+      {% if form.password2.errors %}
+      <div class="field-errors">{% for e in form.password2.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+      {% endif %}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create account →</button>
+  </form>
+
+  <p class="footer-link">Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a></p>
+</div>
+{% endblock %}

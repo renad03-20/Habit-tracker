@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family:sans-serif;background:#0c0f14;color:#e8edf5;padding:2rem;">
+<div style="max-width:480px;margin:0 auto;background:#141820;border:1px solid #252d3d;border-radius:12px;padding:2rem;">
+  <h2 style="color:#3d8ef8;margin-bottom:1rem;">Verify your email address</h2>
+  <p>Hi {{ user.get_short_name }},</p>
+  <p style="margin:1rem 0;color:#8896b0;">Click the button below to verify your email and activate your account. This link expires in 24 hours.</p>
+  <a href="{{ verification_url }}" style="display:inline-block;background:#3d8ef8;color:#fff;padding:0.8rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:600;margin:1rem 0;">Verify email address →</a>
+  <p style="color:#8896b0;font-size:0.8rem;margin-top:1.5rem;">If you didn't create an account, you can safely ignore this email.</p>
+  <p style="color:#8896b0;font-size:0.8rem;">Or copy this URL: {{ verification_url }}</p>
+</div>
+</body>
+</html>

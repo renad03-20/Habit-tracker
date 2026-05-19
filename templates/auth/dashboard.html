@@ -1,0 +1,39 @@
+{% extends "auth/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="dashboard-wrap">
+  <div class="user-card">
+    <div class="user-avatar">{{ user.get_short_name|slice:":1"|upper }}</div>
+    <div class="user-name">{{ user.get_full_name }}</div>
+    <div class="user-email">{{ user.email }}</div>
+    <div class="user-meta">
+      <span class="meta-badge verified">✓ Email verified</span>
+      <span class="meta-badge">Joined {{ user.date_joined|date:"N j, Y" }}</span>
+      {% if user.last_login_ip %}<span class="meta-badge">Last IP: {{ user.last_login_ip }}</span>{% endif %}
+    </div>
+    <div class="action-grid" style="margin-top:1.5rem;">
+      <a href="{% url 'accounts:change_password' %}" class="btn btn-ghost">🔑 Change password</a>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ghost" style="width:100%;">↩ Sign out</button>
+      </form>
+    </div>
+  </div>
+
+  {% if sessions %}
+  <p class="section-title">Active sessions</p>
+  <div class="sessions-list">
+    {% for s in sessions %}
+    <div class="session-item">
+      <div class="session-dot"></div>
+      <div style="flex:1;">
+        <div class="session-ip">{{ s.ip_address|default:"Unknown IP" }}</div>
+        <div class="session-time">{{ s.user_agent|truncatechars:60 }}</div>
+      </div>
+      <div class="session-time">{{ s.last_activity|timesince }} ago</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

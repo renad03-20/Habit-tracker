@@ -1,0 +1,53 @@
+{% extends "auth/base.html" %}
+{% block title %}Sign In{% endblock %}
+{% block content %}
+<div class="auth-card">
+  <a href="/" class="brand">
+    <div class="brand-icon">⬡</div>
+    <span class="brand-name">{% if SITE_NAME %}{{ SITE_NAME }}{% else %}MyApp{% endif %}</span>
+  </a>
+
+  <h1 class="card-title">Welcome back</h1>
+  <p class="card-subtitle">Sign in to your account to continue.</p>
+
+  {% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+    <li class="message {{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="field">
+      <label for="{{ form.email.id_for_label }}">Email address</label>
+      {{ form.email }}
+      {% if form.email.errors %}
+      <div class="field-errors">{% for e in form.email.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <label for="{{ form.password.id_for_label }}">Password</label>
+      {{ form.password }}
+      {% if form.password.errors %}
+      <div class="field-errors">{% for e in form.password.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+      {% endif %}
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <label class="checkbox-row" style="margin:0;">
+        {{ form.remember_me }} <span>Keep me signed in</span>
+      </label>
+      <a href="{% url 'accounts:password_reset_request' %}" style="font-size:0.85rem;color:var(--accent);text-decoration:none;">Forgot password?</a>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Sign in →</button>
+  </form>
+
+  <p class="footer-link">Don't have an account? <a href="{% url 'accounts:signup' %}">Create one</a></p>
+  <p class="footer-link" style="margin-top:0.5rem;"><a href="{% url 'accounts:resend_verification' %}">Resend verification email</a></p>
+</div>
+{% endblock %}
