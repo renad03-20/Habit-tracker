@@ -20,3 +20,5 @@ db.sqlite3
 media/
 
 /__pycache__
+
+core/__pycache__/settings.cpython-313.pyc
