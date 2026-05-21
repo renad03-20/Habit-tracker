@@ -29,3 +29,7 @@ class Habit(models.Model):
 
     def __str__(self):
         return self.title
+    
+class HabitCompletion(models.Model):
+    habit = models.ForeignKey(Habit, on_delete=models.CASCADE)
+    completed_at = models.DateTimeField(auto_now_add=True)
