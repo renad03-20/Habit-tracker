@@ -96,3 +96,45 @@ def dashboard(request):
         'icon_choices':     Habit.ICON_CHOICES,
     }
     return render(request, 'habits/dashboard.html', context)
+
+@login_required
+def habit_create(request):
+    if request.method == 'POST':
+        title       = request.POST.get('title', '').strip()
+        color       = request.POST.get('color', '#3b82f6')
+        periodicity = request.POST.get('periodicity', 'daily')
+        target      = int(request.POST.get('target_per_day', 1))
+
+        icon = request.POST.get('icon', '🎯')
+        if title:
+            Habit.objects.create(
+                user=request.user,
+                title=title,
+                icon=icon,
+                color=color,
+                periodicity=periodicity,
+                target_per_day=max(1, target),
+            )
+        return redirect('habits:dashboard')
+    # GET → just redirect (modal lives on dashboard)
+    return redirect('habits:dashboard')
+
+@login_required
+def habit_edit(request, pk):
+    habit = get_object_or_404(Habit, pk=pk, user=request.user)
+    if request.method == 'POST':
+        habit.title        = request.POST.get('title', habit.title).strip()
+        habit.icon         = request.POST.get('icon', habit.icon)
+        habit.color        = request.POST.get('color', habit.color)
+        habit.periodicity  = request.POST.get('periodicity', habit.periodicity)
+        habit.target_per_day = int(request.POST.get('target_per_day', habit.target_per_day))
+        habit.save()
+    return redirect('habits:dashboard')
+
+
+@login_required
+def habit_delete(request, pk):
+    habit = get_object_or_404(Habit, pk=pk, user=request.user)
+    if request.method == 'POST':
+        habit.delete()
+    return redirect('habits:dashboard')
