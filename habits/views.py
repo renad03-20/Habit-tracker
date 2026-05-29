@@ -54,7 +54,7 @@ def dashboard(request):
 
     # Gamification
     xp, level, xp_in_level = xp_and_level(user)
-    badges = badges(user, habits_data)
+    earned_badges = badges(user, habits_data)
 
     # Analytics
     weekly_data = weekly_bar_data(user)
@@ -88,7 +88,7 @@ def dashboard(request):
         'xp':               xp,
         'level':            level,
         'xp_in_level':      xp_in_level,
-        'badges':           badges,
+        'badges':           earned_badges,
         'weekly_data':      json.dumps(weekly_data),
         'heatmap':          json.dumps(heatmap),
         'longest_streak':   longest,
@@ -138,3 +138,50 @@ def habit_delete(request, pk):
     if request.method == 'POST':
         habit.delete()
     return redirect('habits:dashboard')
+
+@login_required
+@require_POST
+def habit_complete(request, pk):
+    """AJAX endpoint — log one completion; returns updated counts."""
+    habit = get_object_or_404(Habit, pk=pk, user=request.user)
+    HabitCompletion.objects.create(habit=habit)
+
+    done_today = completions_today(habit)
+    streak     = calculate_streak(habit)
+    progress   = min(int(done_today / habit.target_per_day * 100), 100)
+
+    return JsonResponse({
+        'done_today': done_today,
+        'target':     habit.target_per_day,
+        'progress':   progress,
+        'streak':     streak,
+        'completed':  done_today >= habit.target_per_day,
+    })
+
+
+@login_required
+@require_POST
+def habit_uncomplete(request, pk):
+    """AJAX endpoint — remove the latest completion for today."""
+    habit = get_object_or_404(Habit, pk=pk, user=request.user)
+    start, end = get_today_range()
+    last = (
+        HabitCompletion.objects
+        .filter(habit=habit, completed_at__range=(start, end))
+        .order_by('-completed_at')
+        .first()
+    )
+    if last:
+        last.delete()
+
+    done_today = completions_today(habit)
+    streak     = calculate_streak(habit)
+    progress   = min(int(done_today / habit.target_per_day * 100), 100)
+
+    return JsonResponse({
+        'done_today': done_today,
+        'target':     habit.target_per_day,
+        'progress':   progress,
+        'streak':     streak,
+        'completed':  done_today >= habit.target_per_day,
+    })
