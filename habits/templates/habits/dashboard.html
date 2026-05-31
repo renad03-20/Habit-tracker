@@ -1,0 +1,650 @@
+{% extends "habits/base.html" %}
+{% block title %}Dashboard — Momentum{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── Hero ─────────────────────────────────────────────────────── */
+.hero {
+  background: linear-gradient(135deg, #0a1f0f 0%, #080e0a 60%);
+  border-bottom: 1px solid var(--border);
+  padding: 2.2rem 2rem 1.8rem;
+  position: relative; overflow: hidden;
+}
+.hero::after {
+  content: '';
+  position: absolute; top: -80px; right: -80px;
+  width: 340px; height: 340px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(62,207,110,.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+/* second glow, bottom-left */
+.hero::before {
+  content: '';
+  position: absolute; bottom: -60px; left: -60px;
+  width: 260px; height: 260px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(163,230,53,.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-greeting {
+  font-family: var(--font-display);
+  font-size: 1.75rem; font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+.hero-sub { color: var(--muted); font-size: .95rem; margin-top: .2rem; }
+
+.hero-stat {
+  background: rgba(22,32,25,0.9);
+  border: 1px solid rgba(62,207,110,0.12);
+  border-radius: 10px;
+  padding: .7rem 1.1rem;
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 130px;
+}
+.hero-stat-val {
+  font-family: var(--font-display);
+  font-size: 1.5rem; font-weight: 700;
+}
+.hero-stat-lbl { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+.xp-bar-wrap { background: var(--surface2); border-radius: 4px; height: 5px; margin-top: 4px; overflow: hidden; }
+.xp-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .6s ease; }
+
+/* ── Layout ───────────────────────────────────────────────────── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem;
+  align-items: start;
+}
+@media (max-width: 1024px) { .dash-grid { grid-template-columns: 1fr; } }
+
+/* ── Section Header ───────────────────────────────────────────── */
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1rem; font-weight: 700;
+  letter-spacing: .02em;
+}
+
+/* ── Habit Card ───────────────────────────────────────────────── */
+.habit-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.2rem;
+  display: flex; flex-direction: column; gap: .7rem;
+  transition: border-color .2s, transform .15s;
+  position: relative; overflow: hidden;
+}
+.habit-card:hover { border-color: rgba(62,207,110,.2); transform: translateY(-1px); }
+.habit-card.is-done { border-color: rgba(62,207,110,.3); }
+.habit-card.is-done::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: rgba(62,207,110,.04);
+}
+.habit-color-strip {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 14px 0 0 14px;
+}
+.habit-top { display: flex; align-items: center; gap: .65rem; }
+.habit-icon-wrap {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.25rem;
+  background: var(--surface2);
+  flex-shrink: 0;
+}
+.habit-title { font-weight: 600; font-size: .95rem; }
+.habit-badge {
+  font-size: .68rem; padding: 2px 7px; border-radius: 20px;
+  border: 1px solid var(--border); color: var(--muted);
+  text-transform: uppercase; letter-spacing: .05em;
+  margin-left: auto;
+}
+.habit-meta { display: flex; align-items: center; gap: 1rem; font-size: .8rem; color: var(--muted); }
+.streak-chip { display: flex; align-items: center; gap: 3px; }
+
+/* Progress bar */
+.prog-wrap { background: var(--surface2); border-radius: 4px; height: 5px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+
+/* Complete button */
+.btn-complete {
+  align-self: flex-start;
+  padding: .38rem 1rem;
+  border-radius: 8px;
+  font-size: .82rem; font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text);
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; gap: 5px;
+}
+.btn-complete:hover { background: var(--accent); border-color: var(--accent); color: #060e08; }
+.btn-complete.done { background: rgba(62,207,110,.15); border-color: rgba(62,207,110,.4); color: var(--success); }
+.btn-complete.done:hover { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.4); color: #f87171; }
+
+/* Card actions */
+.habit-actions { display: flex; gap: .4rem; margin-left: auto; }
+.hab-act-btn {
+  background: none; border: 1px solid var(--border); border-radius: 7px;
+  color: var(--muted); font-size: .75rem; padding: 3px 8px; cursor: pointer;
+  transition: all .2s;
+}
+.hab-act-btn:hover { color: var(--text); border-color: rgba(62,207,110,.25); }
+.hab-act-btn.del:hover { color: #f87171; border-color: rgba(248,113,113,.4); }
+
+/* Add habit button */
+.btn-add-habit {
+  background: linear-gradient(135deg, var(--accent), #22a84d);
+  border: none; border-radius: 10px;
+  color: #060e08; font-weight: 700; font-size: .85rem;
+  padding: .5rem 1.1rem;
+  cursor: pointer; transition: opacity .2s, box-shadow .2s;
+  font-family: var(--font-display);
+  display: flex; align-items: center; gap: 5px;
+}
+.btn-add-habit:hover { opacity: .9; box-shadow: 0 4px 18px rgba(62,207,110,.3); }
+
+/* Empty state */
+.empty-state {
+  text-align: center; padding: 3rem 1rem; color: var(--muted);
+}
+.empty-state .es-icon { font-size: 3rem; margin-bottom: .5rem; }
+
+/* ── Analytics Panel ──────────────────────────────────────────── */
+.analytics-panel { display: flex; flex-direction: column; gap: 1.2rem; }
+
+.stat-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.2rem;
+}
+.stat-block-title {
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--muted); margin-bottom: .7rem;
+}
+
+/* Circular progress */
+.circle-wrap { display: flex; align-items: center; gap: 1rem; }
+.circle-svg { transform: rotate(-90deg); }
+.circle-track { fill: none; stroke: var(--surface2); }
+.circle-prog { fill: none; stroke-linecap: round; transition: stroke-dashoffset .8s ease; }
+.circle-label { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; }
+.circle-sub { font-size: .8rem; color: var(--muted); }
+
+/* Heatmap */
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(18, 1fr);
+  gap: 3px;
+}
+.hm-col { display: flex; flex-direction: column; gap: 3px; }
+.hm-cell {
+  width: 100%; aspect-ratio: 1;
+  border-radius: 2px;
+  background: var(--surface2);
+  transition: transform .1s;
+  cursor: default;
+}
+.hm-cell:hover { transform: scale(1.3); }
+.hm-cell[data-level="1"] { background: rgba(62,207,110,.25); }
+.hm-cell[data-level="2"] { background: rgba(62,207,110,.5); }
+.hm-cell[data-level="3"] { background: rgba(62,207,110,.75); }
+.hm-cell[data-level="4"] { background: #3ecf6e; }
+
+/* Badges */
+.badges-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.badge-chip {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; padding: .3rem .75rem;
+  font-size: .78rem; display: flex; align-items: center; gap: 5px;
+}
+
+/* ── Modals ───────────────────────────────────────────────────── */
+.modal-dark .modal-content {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.modal-dark .modal-header { border-bottom: 1px solid var(--border); }
+.modal-dark .modal-footer { border-top: 1px solid var(--border); }
+.modal-dark .modal-title { font-family: var(--font-display); font-weight: 700; }
+.form-dark .form-control, .form-dark .form-select {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); border-radius: 8px;
+}
+.form-dark .form-control:focus, .form-dark .form-select:focus {
+  background: var(--surface2); border-color: var(--accent); color: var(--text);
+  box-shadow: 0 0 0 3px rgba(62,207,110,.12);
+}
+.form-dark label { color: var(--muted); font-size: .82rem; margin-bottom: .3rem; }
+.form-dark .form-select option { background: var(--surface2); }
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.habit-card { animation: fadeUp .35s ease both; }
+{% for i in "0123456789" %}.habit-card:nth-child({{ forloop.counter }}) { animation-delay: {{ forloop.counter0 }}00ms; }{% endfor %}
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<!-- ── Hero ─────────────────────────────────────────────────────── -->
+<div class="hero">
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+
+    <div>
+      <div class="hero-greeting">{{ greeting }}, {{ request.user.email|truncatechars:20 }} 👋</div>
+      <div class="hero-sub">
+        {% if total_habits == 0 %}
+          Add your first habit to get started.
+        {% else %}
+          You completed <strong style="color:var(--text)">{{ completed_count }}/{{ total_habits }}</strong> habits today.
+          {% if completion_pct == 100 %}🎉 Perfect day!{% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <div class="hero-stat">
+        <span class="hero-stat-val" style="color:var(--accent)">{{ overall_streak }}🔥</span>
+        <span class="hero-stat-lbl">Current streak</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-val">{{ completion_pct }}%</span>
+        <span class="hero-stat-lbl">Today's rate</span>
+      </div>
+      <div class="hero-stat" style="min-width:160px;">
+        <div class="d-flex align-items-center justify-content-between">
+          <span class="hero-stat-val" style="color:var(--accent2)">Lvl {{ level }}</span>
+          <span style="font-size:.78rem;color:var(--muted)">{{ xp }} XP</span>
+        </div>
+        <div class="xp-bar-wrap">
+          <div class="xp-bar-fill" style="width:{{ xp_in_level }}%"></div>
+        </div>
+        <span class="hero-stat-lbl">{{ xp_in_level }}/100 to next level</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── Dashboard Grid ─────────────────────────────────────────── -->
+<div class="dash-grid">
+
+  <!-- ── LEFT: Habits ──────────────────────────────────────────── -->
+  <div>
+    <div class="section-header">
+      <span class="section-title">Today's Habits</span>
+      <button class="btn-add-habit" data-bs-toggle="modal" data-bs-target="#addHabitModal">
+        ＋ Add Habit
+      </button>
+    </div>
+
+    {% if habits_data %}
+      <div class="d-flex flex-column gap-3" id="habitsContainer">
+        {% for h in habits_data %}
+        <div class="habit-card {% if h.completed %}is-done{% endif %}" id="hcard-{{ h.id }}">
+          <div class="habit-color-strip" style="background:{{ h.color }}"></div>
+
+          <div class="habit-top">
+            <div class="habit-icon-wrap" style="background:{{ h.color }}22;">{{ h.icon }}</div>
+            <div>
+              <div class="habit-title">{{ h.title }}</div>
+              <div style="font-size:.75rem;color:var(--muted)">{{ h.done_today }}/{{ h.target }} today</div>
+            </div>
+            <span class="habit-badge">{{ h.periodicity }}</span>
+            <div class="habit-actions">
+              <button class="hab-act-btn" data-bs-toggle="modal" data-bs-target="#editModal-{{ h.id }}">✏️</button>
+              <button class="hab-act-btn del" data-bs-toggle="modal" data-bs-target="#delModal-{{ h.id }}">🗑</button>
+            </div>
+          </div>
+
+          <!-- Progress -->
+          <div class="prog-wrap">
+            <div class="prog-fill" id="prog-{{ h.id }}"
+                 style="width:{{ h.progress }}%;background:{{ h.color }}"></div>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="habit-meta">
+              <span class="streak-chip">🔥 <strong>{{ h.streak }}</strong> day streak</span>
+            </div>
+            <button class="btn-complete {% if h.completed %}done{% endif %}"
+                    id="cbtn-{{ h.id }}"
+                    onclick="toggleComplete({{ h.id }}, this)">
+              {% if h.completed %}✓ Done{% else %}◎ Complete{% endif %}
+            </button>
+          </div>
+        </div>
+
+        <!-- Edit Modal -->
+        <div class="modal fade modal-dark" id="editModal-{{ h.id }}" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <form method="POST" action="{% url 'habits:habit_edit' h.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                  <h5 class="modal-title">Edit Habit</h5>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body form-dark d-flex flex-column gap-3">
+                  <div>
+                    <label>Title</label>
+                    <input name="title" class="form-control" value="{{ h.title }}" required>
+                  </div>
+                  <div class="d-flex gap-3">
+                    <div class="flex-grow-1">
+                      <label>Icon</label>
+                      <select name="icon" class="form-select">
+                        {% for val, label in icon_choices %}
+                        <option value="{{ val }}" {% if val == h.icon %}selected{% endif %}>{{ val }} {{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div>
+                      <label>Color</label>
+                      <input name="color" type="color" class="form-control form-control-color" value="{{ h.color }}" style="width:52px;height:38px;">
+                    </div>
+                  </div>
+                  <div class="d-flex gap-3">
+                    <div class="flex-grow-1">
+                      <label>Periodicity</label>
+                      <select name="periodicity" class="form-select">
+                        <option value="daily"  {% if h.periodicity == 'daily'  %}selected{% endif %}>Daily</option>
+                        <option value="weekly" {% if h.periodicity == 'weekly' %}selected{% endif %}>Weekly</option>
+                      </select>
+                    </div>
+                    <div style="width:100px">
+                      <label>Daily Goal</label>
+                      <input name="target_per_day" type="number" class="form-control" value="{{ h.target }}" min="1">
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-sm" style="background:var(--accent);color:#060e08;border:none;">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delete Modal -->
+        <div class="modal fade modal-dark" id="delModal-{{ h.id }}" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" style="font-size:.95rem;">Delete "{{ h.title }}"?</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body" style="font-size:.85rem;color:var(--muted)">
+                All completion history will be permanently deleted.
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{% url 'habits:habit_delete' h.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% endfor %}
+      </div>
+
+    {% else %}
+      <div class="card-dark empty-state">
+        <div class="es-icon">🌱</div>
+        <div style="font-weight:600;margin-bottom:.3rem;">No habits yet</div>
+        <div style="font-size:.85rem;">Hit "Add Habit" to start building your streak.</div>
+      </div>
+    {% endif %}
+  </div>
+
+
+  <!-- ── RIGHT: Analytics ────────────────────────────────────────── -->
+  <div class="analytics-panel">
+
+    <!-- Completion ring -->
+    <div class="stat-block">
+      <div class="stat-block-title">Weekly Completion Rate</div>
+      <div class="circle-wrap">
+        <svg width="72" height="72" class="circle-svg" viewBox="0 0 72 72">
+          <circle class="circle-track" cx="36" cy="36" r="30" stroke-width="7"/>
+          <circle class="circle-prog" cx="36" cy="36" r="30" stroke-width="7"
+                  stroke="var(--accent)"
+                  stroke-dasharray="188.5"
+                  stroke-dashoffset="{{ 188.5|floatformat:1 }}"
+                  id="ringCircle"
+                  data-pct="{{ completion_pct }}"/>
+        </svg>
+        <div>
+          <div class="circle-label" id="ringLabel">{{ completion_pct }}%</div>
+          <div class="circle-sub">{{ completed_count }} of {{ total_habits }} done today</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly bar chart -->
+    <div class="stat-block">
+      <div class="stat-block-title">Last 7 Days</div>
+      <canvas id="weeklyChart" height="110"></canvas>
+    </div>
+
+    <!-- Longest streak -->
+    <div class="stat-block">
+      <div class="stat-block-title">All-Time Best</div>
+      <div style="display:flex;align-items:center;gap:.7rem;">
+        <span style="font-size:2rem;">🏆</span>
+        <div>
+          <div style="font-family:var(--font-display);font-size:1.4rem;font-weight:800;">{{ longest_streak }} days</div>
+          <div style="font-size:.8rem;color:var(--muted);">{{ longest_habit|default:"—" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Heatmap -->
+    <div class="stat-block">
+      <div class="stat-block-title">Activity Heatmap</div>
+      <div class="heatmap-grid" id="heatmapGrid"></div>
+      <div style="display:flex;align-items:center;gap:4px;margin-top:.6rem;font-size:.7rem;color:var(--muted);">
+        Less
+        <span style="width:10px;height:10px;border-radius:2px;background:var(--surface2);display:inline-block;"></span>
+        <span style="width:10px;height:10px;border-radius:2px;background:rgba(62,207,110,.25);display:inline-block;"></span>
+        <span style="width:10px;height:10px;border-radius:2px;background:rgba(62,207,110,.5);display:inline-block;"></span>
+        <span style="width:10px;height:10px;border-radius:2px;background:#3ecf6e;display:inline-block;"></span>
+        More
+      </div>
+    </div>
+
+    <!-- Badges -->
+    {% if badges %}
+    <div class="stat-block">
+      <div class="stat-block-title">Achievements</div>
+      <div class="badges-row">
+        {% for b in badges %}
+        <div class="badge-chip">{{ b.icon }} {{ b.label }}</div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+
+<!-- ── Add Habit Modal ─────────────────────────────────────────── -->
+<div class="modal fade modal-dark" id="addHabitModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" action="{% url 'habits:habit_create' %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">New Habit</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body form-dark d-flex flex-column gap-3">
+          <div>
+            <label>Title</label>
+            <input name="title" class="form-control" placeholder="e.g. Drink Water" required>
+          </div>
+          <div class="d-flex gap-3">
+            <div class="flex-grow-1">
+              <label>Icon</label>
+              <select name="icon" class="form-select">
+                {% for val, label in icon_choices %}
+                <option value="{{ val }}">{{ val }} {{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label>Color</label>
+              <input name="color" type="color" class="form-control form-control-color" value="#3ecf6e" style="width:52px;height:38px;">
+            </div>
+          </div>
+          <div class="d-flex gap-3">
+            <div class="flex-grow-1">
+              <label>Periodicity</label>
+              <select name="periodicity" class="form-select">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
+            </div>
+            <div style="width:100px">
+              <label>Daily Goal</label>
+              <input name="target_per_day" type="number" class="form-control" value="1" min="1">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-sm" style="background:var(--accent);color:#060e08;border:none;padding:.4rem 1.1rem;">
+            Create Habit
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+const CSRF = "{{ csrf_token }}";
+const weeklyData = {{ weekly_data|safe }};
+const heatmapData = {{ heatmap|safe }};
+
+/* ── Completion ring ──────────────────────────────────────────── */
+const ring = document.getElementById('ringCircle');
+const pct  = parseInt(ring.dataset.pct);
+const circ = 188.5;
+ring.style.strokeDashoffset = circ - (circ * pct / 100);
+
+/* ── Weekly bar chart ─────────────────────────────────────────── */
+const ctx = document.getElementById('weeklyChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: Object.keys(weeklyData),
+    datasets: [{
+      data: Object.values(weeklyData),
+      backgroundColor: 'rgba(62,207,110,0.65)',
+      borderRadius: 5,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false }, tooltip: { callbacks: {
+      label: ctx => `${ctx.raw} completion${ctx.raw !== 1 ? 's' : ''}`
+    }}},
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6a8c72', font: { size: 11 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6a8c72', font: { size: 11 }, stepSize: 1 }, beginAtZero: true }
+    }
+  }
+});
+
+/* ── Heatmap ──────────────────────────────────────────────────── */
+(function buildHeatmap() {
+  const grid = document.getElementById('heatmapGrid');
+  if (!grid) return;
+
+  // Group into 18 columns of 7 (weeks)
+  const weeks = [];
+  for (let i = 0; i < heatmapData.length; i += 7) {
+    weeks.push(heatmapData.slice(i, i + 7));
+  }
+  // Keep last 18 weeks max
+  const display = weeks.slice(-18);
+
+  const maxVal = Math.max(...heatmapData.map(d => d.count), 1);
+  display.forEach(week => {
+    const col = document.createElement('div');
+    col.className = 'hm-col';
+    week.forEach(day => {
+      const cell = document.createElement('div');
+      cell.className = 'hm-cell';
+      const level = day.count === 0 ? 0
+                  : day.count < maxVal * .33 ? 1
+                  : day.count < maxVal * .66 ? 2
+                  : day.count < maxVal       ? 3 : 4;
+      if (level) cell.dataset.level = level;
+      cell.title = `${day.date}: ${day.count} completion${day.count !== 1 ? 's' : ''}`;
+      col.appendChild(cell);
+    });
+    grid.appendChild(col);
+  });
+})();
+
+/* ── AJAX Complete / Uncomplete ───────────────────────────────── */
+function toggleComplete(id, btn) {
+  const card     = document.getElementById(`hcard-${id}`);
+  const progFill = document.getElementById(`prog-${id}`);
+  const isDone   = btn.classList.contains('done');
+  const url      = isDone
+    ? `/habits/${id}/uncomplete/`
+    : `/habits/${id}/complete/`;
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/json' },
+  })
+  .then(r => r.json())
+  .then(data => {
+    // Update progress bar
+    progFill.style.width = data.progress + '%';
+
+    // Update counter text
+    const sub = card.querySelector('.habit-top .flex-grow-1 div:last-child');
+    if (sub) sub.textContent = `${data.done_today}/${data.target} today`;
+
+    // Update streak
+    const streakEl = card.querySelector('.streak-chip strong');
+    if (streakEl) streakEl.textContent = data.streak;
+
+    // Toggle button & card state
+    if (data.completed) {
+      btn.classList.add('done');
+      btn.textContent = '✓ Done';
+      card.classList.add('is-done');
+    } else {
+      btn.classList.remove('done');
+      btn.textContent = '◎ Complete';
+      card.classList.remove('is-done');
+    }
+  });
+}
+</script>
+{% endblock %}
